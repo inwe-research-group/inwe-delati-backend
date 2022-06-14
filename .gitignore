@@ -1,0 +1,26 @@
+# See http://help.github.com/ignore-files/ for more about ignoring files.
+
+# compiled output
+/tmp
+# Only exists if Bazel was run
+/bazel-out
+
+# dependencies
+
+
+# profiling files
+chrome-profiler-events*.json
+
+# IDEs and editors
+/.idea
+.git
+.settings/
+
+# IDE - VSCode
+.vscode/*
+
+# misc
+/__pycache__
+
+# System Files
+Thumbs.db
