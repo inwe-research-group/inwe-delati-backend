@@ -11,7 +11,7 @@ una vez activado el entorno virtual debe mostrar como se indica:
 (.venv) PS C:\RutaDelProyecto
 
 luego lanzar la instruccion para instalar las dependencias:
-pip install to-requirements.txt
+pip install -r requirements.txt
 
 para desplegar en ambiente local:
 python app.py runserver
