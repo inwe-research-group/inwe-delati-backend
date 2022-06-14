@@ -9,7 +9,7 @@
 
 
 # profiling files
-chrome-profiler-events*.json
+
 
 # IDEs and editors
 .git
