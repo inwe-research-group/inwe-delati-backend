@@ -8,12 +8,12 @@ from sklearn import cluster , metrics
 from sklearn.cluster import DBSCAN
 from matplotlib import pyplot as plt
 from sklearn.neighbors import NearestNeighbors
-
-conn= psycopg2.connect(database="giinwedb", user="modulo4", password="modulo4", host="128.199.1.222", port="5432")
+from db import con
+# conn= psycopg2.connect(database="giinwedb", user="modulo4", password="modulo4", host="128.199.1.222", port="5432")
 SILHOUETTE_SAMPLE_SIZE=3000
 
-def get_dataFrame(sql, conn):
-    df = pd.read_sql_query(sql, con = conn)
+def get_dataFrame(sql, con):
+    df = pd.read_sql_query(sql, con = con)
     #print(df)
     return df
 
@@ -26,7 +26,7 @@ def dbscan_model(eps, min_samples, query):
     result = {}
 
     #TODO: Obtener data desde la query
-    data=get_dataFrame(query, conn)
+    data=get_dataFrame(query, con)
     #TODO: transformamos la data
     dataTransformed = transform_data(data)   
     # inicializamos DBSCAN

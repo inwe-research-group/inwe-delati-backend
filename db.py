@@ -1,2 +1,8 @@
-import psycopg2 
-con = psycopg2.connect(database="giinwedb", user="modulo4", password="modulo4", host="128.199.1.222", port="5432")
+import psycopg2
+from decouple import config 
+con = psycopg2.connect(
+  database=config('DATABASE'), 
+  user=config('USER'), 
+  password=config('PASS'), 
+  host=config('HOST_BD'), 
+  port=config('PORT_BD'))

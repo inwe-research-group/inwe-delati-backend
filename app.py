@@ -17,6 +17,8 @@ from matplotlib import pyplot as plt1
 import matplotlib.cm as cm 
 import numpy as np
 from dbscan import dbscan_model
+#
+from decouple import config
 
 from db import con
 
@@ -26,11 +28,10 @@ cors = CORS(app, resources={r"*": {"origins": "*"}})
 #app.config['SQLALCHEMY_DATABASE_URI']='postgresql://128.199.1.222/giinwedb'
 #app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-PORT= 5001
-#HOST='128.199.1.222'
-HOST='127.0.0.1'
-DEBUG=False
-#DEBUG=True
+PORT=config('PORT_BACK')
+HOST=config('HOST')
+DEBUG=config('DEBUG')
+
 
 db = SQLAlchemy(app)
 def load_data():      
@@ -203,3 +204,4 @@ if __name__ == '__main__':
     #app.run(debug=True)
     #app.run(port=PORT, debug=DEBUG)
     app.run(host=HOST,port=PORT,debug=DEBUG)
+    
