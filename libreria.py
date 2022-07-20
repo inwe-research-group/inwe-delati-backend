@@ -73,14 +73,14 @@ def imagen2D (pca_df,titulo):
         else:      
             ax.scatter(pca_df.iloc[clusters== (cluster), 0], pca_df.iloc[clusters==(cluster), 1], s=5, c='Gray',label=f"Outlier")
     #Legenda
-    plt.legend(title='Clusters', loc='upper left', fontsize='small')
+    fig.legend(title='Clusters', loc='upper left', fontsize='small')
     plt.grid(color='grey', linestyle='-', linewidth=0.25, alpha=0.6)
     #Creamos el jpg
     my_stringIObytes = io.BytesIO()
-    plt.savefig(my_stringIObytes, format='jpg')
+    fig.savefig(my_stringIObytes, format='jpg')
     my_stringIObytes.seek(0)
     my_base64_jpgData=base64.b64encode(my_stringIObytes.read())
-    plt.clf()
+    plt.close(fig)
     return my_base64_jpgData.decode()
 
 #Ingresa la DataFrame creado por acp para tres componentes
@@ -94,7 +94,7 @@ def imagen3D (pca3d_df,titulo):
     n_clusters= len(cluster_labels)
     #Inicializamos la imagen
     fig3d=plt.figure(figsize=(13,12))
-    ax3d=fig3d.add_subplot(111,projection='3d')
+    ax3d=fig3d.add_subplot(1,1,1,projection='3d')
     #Dibujamos las caracteristicas basicas de la imagen  
     ax3d.set_xlabel('Componente_1', fontsize=15)
     ax3d.set_ylabel('Componente_2', fontsize=15)
@@ -108,12 +108,12 @@ def imagen3D (pca3d_df,titulo):
          else:
             ax3d.scatter(pca3d_df.iloc[clusters== (cluster), 0], pca3d_df.iloc[clusters==(cluster), 1], pca3d_df.iloc[clusters==(cluster),2], s=5, c='Gray',label=f"Outlier")
     #Legenda
-    plt.legend(title='Clusters', loc='upper left', fontsize='small')
+    fig3d.legend(title='Clusters', loc='upper left', fontsize='small')
     plt.grid(color='grey', linestyle='-', linewidth=0.25, alpha=0.6)
     #Creamos el jpg
     my_stringIObytes = io.BytesIO()
     fig3d.savefig(my_stringIObytes, format='jpg')
     my_stringIObytes.seek(0)
     my_base64_jpgData=base64.b64encode(my_stringIObytes.read())
-    plt.clf()
+    plt.close(fig3d)
     return my_base64_jpgData.decode()

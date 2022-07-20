@@ -13,7 +13,6 @@ from flask_sqlalchemy import SQLAlchemy
 #from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans, DBSCAN
 import matplotlib
-matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 import matplotlib.cm as cm 
 import numpy as np
@@ -128,14 +127,6 @@ def Clasificacion():
             found = tree.query(cd)
             centroids_values.append(found[1])
             centroids_all_data.append(found)    
-        #Dibujamos el KMEANS para dos columnas
-        for cluster in range(n_clusters):
-            color = cm.nipy_spectral(float(cluster) / n_clusters)   
-            plt.scatter(transformed_data.iloc[elements==cluster, axis_x], transformed_data.iloc[elements==cluster, axis_y], s=10, c=np.array([color]))
-            plt.scatter(centroids[cluster, axis_x], centroids[cluster, axis_y], s=120, c=np.array([color]),alpha=0.3, label=f"Cluster {cluster}")
-            plt.legend(title='Clusters', loc='upper left', fontsize='xx-small')            
-        plt.xlabel(field_names[axis_x])
-        plt.ylabel(field_names[axis_y])
         #Agregamos la columna cluster a la data
         dataframe["cluster"] = elements
         #Ordenamos la data en base al cluster
@@ -179,47 +170,32 @@ def Clasificacion():
             }
             clusters.append(obj)
         #Agregamos los datos del cluster al json
-        result["clusters"] = clusters        
-        #Agregamos la imagen KMEANS al json en base64
-        my_stringIObytes = io.BytesIO()   
-        plt.savefig(my_stringIObytes, format='jpg')        
-        my_stringIObytes.seek(0)
-        my_base64_jpgData = base64.b64encode(my_stringIObytes.read())
-        result["graphic"] = my_base64_jpgData.decode()        
-        #========grafica pai==================
-        plt.clf()
-        #Dibujamos y agregamos la grafica de pastel al json en base64
-        plt.pie(cantidadClusters,labels=nombreClusters,autopct="%0.1f%%")
-        plt.title('Clusters(%) de la Demanda social de profesionales de TI')
-        my_stringIObytes = io.BytesIO()   
-        plt.savefig(my_stringIObytes, format='jpg')        
-        my_stringIObytes.seek(0)
-        my_base64_jpgData = base64.b64encode(my_stringIObytes.read())
-        result["elbow_method"] = my_base64_jpgData.decode()
+        result["clusters"] = clusters           
+        result["elbow_method"] = ''
         #============================
-        plt.clf() #clear current image plt
         #2 componentes ACP
         result["2CP"]=acp(transformed_data,kmeans,2)
         #3 componentes ACP
         result["3CP"]=acp(transformed_data,kmeans,3)
         #Generamos imagen 2D
-        result["graphic_kmeans"]=imagen2D( result["2CP"],'KMEANS')
+        result["graphic_kmeans_2D"]=imagen2D( result["2CP"],'KMEANS')
         #Generamos imagen 3D
-        result["graphic_kmeans_2"]=imagen3D( result["3CP"],'KMEANS')
+        result["graphic_kmeans_3D"]=imagen3D( result["3CP"],'KMEANS')
         #Cambiamos DataFrame 2CP a json
         result["2CP"]=json.loads(result["2CP"].to_json(orient='values'))
         #Cambiamos DataFrame 3CP a json
         result["3CP"]=json.loads(result["3CP"].to_json(orient='values'))
+        result["graphic"] = result["graphic_kmeans_2D"]
         response = jsonify(result)
         return response
     
 @app.route('/dbscan', methods=['POST'])
 def dbscan ():    
     if request.method == 'POST':
-        body = request.get_json(),       
-        query       = body[0]['query']
-        eps         = body[0]['eps']
-        min_samples = body[0]['min_samples']     
+        body = request.get_json()       
+        query       = body['query']
+        eps         = body['eps']
+        min_samples = body['min_samples']     
         total_data={}
         #Obtener data desde la query
         data=get_dataFrame(query, con)
@@ -241,7 +217,8 @@ def dbscan ():
         #Variables
         clusters_uniques = set(list(predicted_labels))
         cant = list(predicted_labels)    
-        metricas_totales = []
+        cores = [predicted_labels[i] for i in clustering_model.core_sample_indices_ ]
+        cluster_detalles = []
         cantidad_cluster = {}
         n_noise_porcentaje= 0.0
         #Para cada cluster
@@ -251,42 +228,45 @@ def dbscan ():
                 #Cantidad de elementos
                 #Porcentaje de elementos comparado con el total
                 cantidad_cluster = {
-                        "clusters": int(item),
+                        "cluster": int(item),
+                        "nucleos":  cores.count(int(item)),
                         "cantidad": cant.count(int(item)),
-                        "porcentaje": "{:.5f}".format(float(cant.count(int(item))/len(cant)))    
+                        "porcentaje": "{:.5f}".format(float(cant.count(int(item))/len(cant))*100)    
                             }
-                #Agregar a metricas_totales
-                metricas_totales.append(cantidad_cluster)
+                #Agregar a cluster_detalles
+                cluster_detalles.append(cantidad_cluster)
             else:
                 #Porcentaje de ruido
-                n_noise_porcentaje="{:.5f}".format(float(cant.count(int(item))/len(cant)))
+                n_noise_porcentaje="{:.5f}".format(float(cant.count(int(item))/len(cant))*100)
         #Metricas obtenidas
-        total_data["metricas_detalles"] = metricas_totales
+        total_data["cluster_detalles"] = cluster_detalles
+        #Columnas de la data
+        total_data["columns"] = list(data.columns.values)
         #Data del query con columna cluster
         data["cluster"]=clustering_model.labels_
-        total_data["data"]=json.loads(data.to_json(orient = 'values'))
-        #Columnas de la data
-        total_data["numColumn"] = list(data.columns.values)
+        data["idx"]=[i for i in range(len(list(clustering_model.labels_)))]
+        total_data["data"]=json.loads(data.to_json(orient='values'))
+        #Indices de los core
+        total_data["dbscan_core_indices"] = clustering_model.core_sample_indices_.tolist()
         #Metricas
-        total_data["metricas"]={
-                'n_clusters': len(set(clustering_model.labels_)) - (1 if -1 in clustering_model.labels_ else 0),
-                'n_noise': list(clustering_model.labels_).count(-1),
-                'Coefficient': "{:.5f}".format(coefficient),
-                'n_noise_porcentaje': n_noise_porcentaje
+        total_data["dbscan_metricas"]={
+                'dbscan_clusters': len(set(clustering_model.labels_)) - (1 if -1 in clustering_model.labels_ else 0),
+                'dbscan_noise': list(clustering_model.labels_).count(-1),
+                'dbscan_Coefficient': "{:.5f}".format(coefficient),
+                'dbscan_noise_porcentaje': n_noise_porcentaje,
         }
         #2 componentes ACP
-        total_data["2CP"]=acp(normdata,clustering_model,2)
+        total_data["dbscan_2CP"]=acp(normdata,clustering_model,2)
         #3 componentes ACP
-        total_data["3CP"]=acp(normdata,clustering_model,3)
+        total_data["dbscan_3CP"]=acp(normdata,clustering_model,3)
         #Generamos imagen 2D
-        total_data["graphic_dbscan"]=imagen2D( total_data["2CP"],'DBSCAN')
+        total_data["graphic_dbscan_2D"]=imagen2D( total_data["dbscan_2CP"],'DBSCAN')
         #Generamos imagen 3D
-        total_data["graphic_dbscan_2"]=imagen3D( total_data["3CP"],'DBSCAN')
+        total_data["graphic_dbscan_3D"]=imagen3D( total_data["dbscan_3CP"],'DBSCAN')
         #Cambiamos DataFrame 2CP a json
-        total_data["2CP"]=json.loads(total_data["2CP"].to_json(orient='values'))
+        total_data["dbscan_2CP"]=json.loads(total_data["dbscan_2CP"].to_json(orient='values'))
         #Cambiamos DataFrame 3CP a json
-        total_data["3CP"]=json.loads(total_data["3CP"].to_json(orient='values'))
-        total_data["graphic_method_codo"] =''
+        total_data["dbscan_3CP"]=json.loads(total_data["dbscan_3CP"].to_json(orient='values'))
         return (total_data)
 
 if __name__ == '__main__':
