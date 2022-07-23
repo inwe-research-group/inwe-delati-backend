@@ -26,8 +26,8 @@ cors = CORS(app, resources={r"*": {"origins": "*"}})
 #app.config['SQLALCHEMY_DATABASE_URI']='postgresql://128.199.1.222/giinwedb'
 #app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-PORT=config('PORT_BACK')
-HOST=config('HOST')
+PORT=config('POSTGRESQL_PORT_BACKEND')
+HOST=config('POSTGRESQL_HOST_LOCAL')
 DEBUG=config('DEBUG')
 
 
@@ -268,6 +268,18 @@ def dbscan ():
         #Cambiamos DataFrame 3CP a json
         total_data["dbscan_3CP"]=json.loads(total_data["dbscan_3CP"].to_json(orient='values'))
         return (total_data)
+
+@app.route("/Dataset", methods = ['GET'])
+def Dataset():     
+    if request.method == 'GET':
+        return jsonify(load_dataset())
+
+def load_dataset():      
+    #Obtiene la data en formato dataset frame
+    result=get_dataFrame("select id_consulta, descripcion,sql_consulta from dataset", con)
+    #Convierte a un formato json
+    result=json.loads(result.to_json(orient = 'values'))
+    return result
 
 if __name__ == '__main__':
     #app.run()
